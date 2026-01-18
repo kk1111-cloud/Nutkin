@@ -1,10 +1,21 @@
+import os
+import pandas as pd
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import itertools
+from config import *
+from sklearn.decomposition import PCA
+import seaborn as sns
+from scipy.stats import gaussian_kde
+
 class Nutkin:
-    def __init__(self, adata, output_dir, num_pc = DEFAULT_NUM_PC, group_col="group", 
-                 metric_type="sum", variability_method="sd", verbal=True, detail=False):
+    def __init__(self, adata, output_path, num_pc = DEFAULT_NUM_PC, group_col="group", 
+                 metric_type="sum", variability_method="mad", verbal=True, detail=False):
         self.verbal = verbal
         self.detail = detail
         self.group_col = group_col
-        self.output_dir = output_dir
+        self.output_path = output_path
         self.num_pc = num_pc
         self.metric_type = metric_type.lower()
         self.variability_method = variability_method.lower()
@@ -15,7 +26,7 @@ class Nutkin:
         if self.variability_method not in ["sd", "mad", "both"]:
             raise ValueError("variability_method must be 'sd' (standard deviation), 'mad' (median absolute deviation), or 'both'")
             
-        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.output_path, exist_ok=True)
         if group_col not in adata.obs.columns:
             raise ValueError(f"'{group_col}' not found in adata.obs.")
         self.adata = adata
@@ -37,7 +48,6 @@ class Nutkin:
     
         # Concatenate expression and obs info
         merged_df = pd.concat([obs_df.reset_index(drop=True), expr_df.reset_index(drop=True)], axis=1)
-    
         return merged_df
     
     def _optional_print(self, msg, *msgs):
@@ -54,18 +64,18 @@ class Nutkin:
             return self.dimReduceData
         
         self._optional_print("Running dimensional reduction (PCA)...")
-        n_components = min(self.num_pc, self.data.shape[1] - 1)
+        n_components = min(self.num_pc, self.data.shape[1] - 1,self.data.shape[0] - 1)
         self.transformer = PCA(n_components)
         
         dimReduceData = pd.DataFrame(self.transformer.fit_transform(self.data.iloc[:, 1:]))
         self.dimReduceData = pd.concat([self.data.iloc[:,0], dimReduceData], axis=1)
-        
         return self.dimReduceData
 
    
     def _change_of_axes(self, group_data):
         """represent group of cell into group specific features using pca"""
-        transformed_group_data = pd.DataFrame(self.transformer.fit_transform(group_data.iloc[:, 1:]))
+        n_components = min(self.num_pc, group_data.shape[1] - 1,group_data.shape[0] - 1)
+        transformed_group_data = pd.DataFrame(PCA(n_components).fit_transform(group_data.iloc[:, 1:]))
         return pd.concat([group_data.iloc[:,0].reset_index(drop=True), transformed_group_data.reset_index(drop=True)], axis=1).reset_index(drop=True)
     
     
@@ -201,7 +211,7 @@ class Nutkin:
         output_df = output_df.sort_values(by=sort_col, ascending=True).reset_index(drop=True)
  
         self._optional_print("Saving results")
-        output_df.to_csv(os.path.join(self.output_dir, "var_measurement.csv"), index=False)
+        output_df.to_csv(os.path.join(self.output_path, "var_measurement.csv"), index=False)
         return output_df
     
     def _measure_one_group(self, group):
@@ -335,6 +345,8 @@ class Nutkin:
         else:
             if isinstance(group1, str): group1 = [group1]
             if isinstance(group2, str): group2 = [group2]
+            print(group1)
+            print(group2)
             if len(group1) != len(group2):
                 raise ValueError("group1 and group2 should have the same sizes")
             group_pairs = list(zip(group1, group2))
@@ -488,7 +500,7 @@ class Nutkin:
         out_df = out_df.dropna(axis=1, how='all')
     
         self._optional_print("Saving results")
-        out_df.to_csv(os.path.join(self.output_dir, "differential_variability.csv"), index=False)
+        out_df.to_csv(os.path.join(self.output_path, "differential_variability.csv"), index=False)
     
         return out_df
     
@@ -606,7 +618,7 @@ class Nutkin:
         return min_value < 0 < max_value
     
     
-    def visualize_pca_results(self, detail=False, plot_pc_num=3, groups_to_plot=None):
+    def visualize_pca_results(self, detail=False, plot_pc_num=3, plot_type="scatter", groups_to_plot=None):
         """visualization in pair-wise PC space""" 
         if not detail:
             print("detail=False，skipping detailed PCA visualization.")
@@ -660,96 +672,140 @@ class Nutkin:
 
         summary_specific_df = pd.DataFrame(summary_specific, columns=col_names)
 
-        if self.output_dir is not None:
-            os.makedirs(self.output_dir, exist_ok=True)
-            summary_specific_df.to_csv(os.path.join(self.output_dir, "summary_specific.csv"), index=False)
+        if self.output_path is not None:
+            os.makedirs(self.output_path, exist_ok=True)
+            summary_specific_df.to_csv(os.path.join(self.output_path, "summary_specific.csv"), index=False)
 
             
             
             
+        X = self.data.iloc[:, 1:].values
+        groups_all = self.data.iloc[:, 0].values
+
+        pca_global = PCA(n_components=plot_pc_num)
+        pcs_global = pca_global.fit_transform(X)
+        pca_df = pd.DataFrame(
+            pcs_global,
+            columns=[f"PC{i}" for i in range(1, plot_pc_num + 1)]
+        )
+        pca_df["group"] = groups_all
+            
+        plot_data = []
+            
+        for g in selected_groups:
+            df_g = pca_df[pca_df["group"] == g].copy()
+            if len(df_g) < 2:
+                continue
+            pca_g = PCA(n_components=plot_pc_num)
+            pcs_g = pca_g.fit_transform(
+                df_g[[f"PC{i}" for i in range(1, plot_pc_num + 1)]]
+            )
+            
+            for i in range(plot_pc_num):
+                df_g[f"subPC{i+1}"] = pcs_g[:, i]
+
+            plot_data.append(df_g)
+
+        plot_data = pd.concat(plot_data, ignore_index=True)
+
+
         pc_indices = list(range(1, plot_pc_num + 1))
         pc_pairs = list(itertools.combinations(pc_indices, 2))
-        
+
         n_rows = len(group_pairs)
         n_cols = len(pc_pairs)
-        fig_scat, axes_scat = plt.subplots(n_rows, n_cols, figsize=(4*n_cols, 3*n_rows))
-        axes_scat = np.atleast_2d(axes_scat)
-        fig_kde, axes_kde = plt.subplots(n_rows, n_cols, figsize=(4*n_cols, 3*n_rows))
-        axes_kde = np.atleast_2d(axes_kde)
-        
-            
+
+        fig, axes = plt.subplots(
+            n_rows, n_cols,
+            figsize=(4 * n_cols, 3 * n_rows)
+        )
+        axes = np.atleast_2d(axes)
+
+        colors = ["blue", "orange"]
+
         for row_idx, (g1, g2) in enumerate(group_pairs):
-            raw_data = self.data[self.data.iloc[:, 0].isin([g1, g2])]
-            features = raw_data.iloc[:, 1:]
-            n_components = min(self.num_pc, self.data.shape[1] - 1)
-            pca = PCA(n_components)
-            pcs = pca.fit_transform(features)
-    
-            plot_data = pd.concat([raw_data.iloc[:, 0].reset_index(drop=True),pd.DataFrame(pcs[:, :plot_pc_num], 
-                            columns=[f"PC{i}" for i in range(1, plot_pc_num+1)])], axis=1)
-    
-
-            row_data = plot_data[[f"PC{i}" for i in range(1, plot_pc_num+1)]]
-            min_val = row_data.min().min()
-            max_val = row_data.max().max()
-            margin = (max_val - min_val) * 0.1
-            min_val -= margin
-            max_val += margin
-
-            groups = [g1, g2]
-            colors = ["blue", "orange"]
-
             for col_idx, (pcx, pcy) in enumerate(pc_pairs):
-                ax = axes_scat[row_idx, col_idx] if n_rows > 1 else axes_scat[col_idx]
-                for g, c in zip(groups, colors):
-                    subset = plot_data[plot_data.iloc[:, 0] == g]
-                    ax.scatter(subset[f"PC{pcx}"], subset[f"PC{pcy}"], color=c, s=1, alpha=0.6, label=g)
-                ax.set_xlabel(f"PC{pcx}")
-                ax.set_ylabel(f"PC{pcy}")
-                ax.set_xlim(min_val, max_val)
-                ax.set_ylim(min_val, max_val)
-                ax.set_aspect('equal', adjustable='box')
+                ax = axes[row_idx, col_idx]
+
+                for g, c in zip([g1, g2], colors):
+                    subset = plot_data[plot_data["group"] == g]
+
+                    if plot_type == "scatter":
+                        ax.scatter(
+                            subset[f"subPC{pcx}"],
+                            subset[f"subPC{pcy}"],
+                            s=2,
+                            alpha=0.6,
+                            color=c,
+                            label=g
+                        )
+
+                    elif plot_type == "contour":
+                        _draw_kde_contour(ax, subset, pcx, pcy, c)
+
+                ax.set_xlabel(f"subPC{pcx}")
+                ax.set_ylabel(f"subPC{pcy}")
+                ax.set_aspect("equal", adjustable="box")
+
                 if col_idx == 0:
                     ax.set_title(f"{g1} vs {g2}", fontsize=10)
-                else:
-                    ax.set_title("")
-                ax.legend(groups, fontsize=6, loc='upper right', frameon=False)
-            
-            for col_idx, (pcx, pcy) in enumerate(pc_pairs):
-                ax = axes_kde[row_idx, col_idx] if n_rows > 1 else axes_kde[col_idx]
-                for g, c in zip(groups, colors):
-                    subset = plot_data[plot_data.iloc[:, 0] == g]
-                    if len(subset) > 1:
-                        sns.kdeplot(
-                    data=subset,
-                    x=f"PC{pcx}", y=f"PC{pcy}",
-                    fill=False, levels=8, linewidths=1, ax=ax, color=c
-                    )
-                ax.set_xlabel(f"PC{pcx}")
-                ax.set_ylabel(f"PC{pcy}")
-                ax.set_xlim(min_val, max_val)
-                ax.set_ylim(min_val, max_val)
-                ax.set_aspect('equal', adjustable='box')
-                if col_idx == 0:
-                    ax.set_title(f"{g1} vs {g2}", fontsize=10)
-                else:
-                    ax.set_title("")
-                ax.legend(groups, fontsize=6, loc='upper right', frameon=False)
 
-               
+                ax.legend(fontsize=6, frameon=False)
 
+
+        if self.output_path is not None:
+            fname = f"pairwise_pca_{plot_type}.png"
+            fig.savefig(
+                os.path.join(self.output_path, fname),
+                dpi=300,
+                bbox_inches="tight"
+            )
+
+        plt.close(fig)
+
+        print(
+            f"PCA visualization ({plot_type}) saved to {self.output_path}"
+            if self.output_path else
+            "Visualization complete."
+        )
     
-        if self.output_dir is not None:
-            scatter_path = os.path.join(self.output_dir, "all_pairwise_scatter.png")
-            kde_path = os.path.join(self.output_dir, "all_pairwise_kde.png")
-            
-            fig_scat.tight_layout(h_pad=2.0, w_pad=0.5)
-            fig_scat.savefig(scatter_path, dpi=300)
-            
-            fig_kde.tight_layout(h_pad=2.0, w_pad=0.5)
-            fig_kde.savefig(kde_path, dpi=300)
+    def _draw_kde_contour(ax, subset, pcx, pcy, color):
+        x = subset[f"subPC{pcx}"].values
+        y = subset[f"subPC{pcy}"].values
 
-        plt.close(fig_scat)
-        plt.close(fig_kde)
-           
-        print(f"All pairwise plots saved to {self.output_dir}/pairwise_kde_all.png" if self.output_dir else "Visualization complete.")
+        if len(x) < 10:
+            return
+
+        kde = gaussian_kde(np.vstack([x, y]))
+
+        xmin, xmax = x.min(), x.max()
+        ymin, ymax = y.min(), y.max()
+        pad_x = 0.1 * (xmax - xmin)
+        pad_y = 0.1 * (ymax - ymin)
+
+        xx, yy = np.mgrid[
+            xmin - pad_x : xmax + pad_x : 100j,
+            ymin - pad_y : ymax + pad_y : 100j
+        ]
+
+        zz = kde(
+            np.vstack([xx.ravel(), yy.ravel()])
+        ).reshape(xx.shape)
+
+        # Low-density shape
+        ax.contour(
+            xx, yy, zz,
+            levels=10,
+            colors=color,
+            linewidths=0.8,
+            alpha=0.8
+        )
+
+        # Fixed density levels
+        cs = ax.contour(
+            xx, yy, zz,
+            levels=contour_levels_fixed,
+            colors=color,
+            linewidths=1.6
+        )
+        ax.clabel(cs, fmt="%.1e", fontsize=8)
