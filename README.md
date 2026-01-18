@@ -143,8 +143,7 @@ The preprocessing module (`preprocessing.py`) performs the following:
 
 **Notes**
 - `measure()` computes variability metrics for each group and saves `var_measurement.csv`.  
-- `differential_test()` performs pairwise statistical comparisons between groups and saves `differential_variability.csv`.  
-- Bootstrapping is used internally for hypothesis testing.  
+- `differential_test()` performs pairwise statistical comparisons between groups and saves `differential_variability.csv`.    
 - PCA-based visualization can be generated using `visualize_pca_results(detail=True)`.  
 - Optional outputs (`summary_specific.csv` and pairwise PCA plots) are only generated if `detail=True`.  
 - The class automatically handles combinations of `metric_type` and `variability_method`, e.g., `"sum"` with `"sd"`, `"both"` with `"both"`, etc.
