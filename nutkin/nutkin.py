@@ -1,16 +1,6 @@
-import os
-import pandas as pd
-import numpy as np
-import random
-import matplotlib.pyplot as plt
-import itertools
-from sklearn.decomposition import PCA
-import seaborn as sns
-
-
 class Nutkin:
     def __init__(self, adata, output_dir, num_pc = DEFAULT_NUM_PC, group_col="group", 
-                 metric_type="sum", variability_method="cov", verbal=True, detail=False):
+                 metric_type="sum", variability_method="sd", verbal=True, detail=False):
         self.verbal = verbal
         self.detail = detail
         self.group_col = group_col
@@ -22,8 +12,8 @@ class Nutkin:
         if self.metric_type not in ["sum", "product", "both"]:
             raise ValueError("metric_type must be 'sum', 'product', or 'both'")
         
-        if self.variability_method not in ["cov", "mad", "both"]:
-            raise ValueError("variability_method must be 'cov' (covariance/SD), 'mad' (median absolute deviation), or 'both'")
+        if self.variability_method not in ["sd", "mad", "both"]:
+            raise ValueError("variability_method must be 'sd' (standard deviation), 'mad' (median absolute deviation), or 'both'")
             
         os.makedirs(self.output_dir, exist_ok=True)
         if group_col not in adata.obs.columns:
@@ -84,19 +74,19 @@ class Nutkin:
         eps = 1e-50
         
         # Calculate both methods if variability_method is "both"
-        if self.variability_method in ["cov", "both"]:
-            # Covariance-based method (SD)
+        if self.variability_method in ["sd", "both"]:
+            # Standard deviation method
             var_matrix = np.cov(group_matrix.T)
             
             if isinstance(var_matrix, float):
-                diag_cov = np.array([var_matrix])
+                diag_sd = np.array([var_matrix])
             else:
-                diag_cov = np.diagonal(var_matrix).copy()
+                diag_sd = np.diagonal(var_matrix).copy()
             
-            diag_cov[diag_cov < eps] = eps
+            diag_sd[diag_sd < eps] = eps
             
-            metric_sum_cov = np.log(np.sum(np.sqrt(diag_cov)))
-            metric_product_cov = np.sum(np.log(np.sqrt(diag_cov)))
+            metric_sum_sd = np.log(np.sum(np.sqrt(diag_sd)))
+            metric_product_sd = np.sum(np.log(np.sqrt(diag_sd)))
         
         if self.variability_method in ["mad", "both"]:
             # Median absolute deviation method
@@ -110,13 +100,13 @@ class Nutkin:
             metric_product_mad = np.sum(np.log(diag_mad))
         
         # Return based on variability_method and metric_type
-        if self.variability_method == "cov":
+        if self.variability_method == "sd":
             if self.metric_type == "sum":
-                return metric_sum_cov
+                return metric_sum_sd
             elif self.metric_type == "product":
-                return metric_product_cov
+                return metric_product_sd
             else:  # metric_type == "both"
-                return metric_sum_cov, metric_product_cov
+                return metric_sum_sd, metric_product_sd
                 
         elif self.variability_method == "mad":
             if self.metric_type == "sum":
@@ -128,11 +118,11 @@ class Nutkin:
                 
         else:  # variability_method == "both"
             if self.metric_type == "sum":
-                return metric_sum_cov, metric_sum_mad
+                return metric_sum_sd, metric_sum_mad
             elif self.metric_type == "product":
-                return metric_product_cov, metric_product_mad
+                return metric_product_sd, metric_product_mad
             else:  # metric_type == "both"
-                return (metric_sum_cov, metric_product_cov), (metric_sum_mad, metric_product_mad)
+                return (metric_sum_sd, metric_product_sd), (metric_sum_mad, metric_product_mad)
     
     
     def measure(self):
@@ -156,35 +146,35 @@ class Nutkin:
             # Build DataFrame based on variability_method and metric_type combinations
             if self.variability_method == "both":
                 if self.metric_type == "both":
-                    # 4 columns: sum_cov, product_cov, sum_mad, product_mad
-                    (metric_sum_cov, metric_product_cov), (metric_sum_mad, metric_product_mad) = metric
-                    sort_col = "sum statistics (cov)"
+                    # 4 columns: sum_sd, product_sd, sum_mad, product_mad
+                    (metric_sum_sd, metric_product_sd), (metric_sum_mad, metric_product_mad) = metric
+                    sort_col = "sum statistics (sd)"
                     metric_df = pd.DataFrame([{
                         "group": group, 
                         "number of cells": num_cell, 
-                        "sum statistics (cov)": round(metric_sum_cov, DECIMAL),
-                        "product statistics (cov)": round(metric_product_cov, DECIMAL),
+                        "sum statistics (sd)": round(metric_sum_sd, DECIMAL),
+                        "product statistics (sd)": round(metric_product_sd, DECIMAL),
                         "sum statistics (mad)": round(metric_sum_mad, DECIMAL),
                         "product statistics (mad)": round(metric_product_mad, DECIMAL)
                     }])
                 elif self.metric_type == "sum":
-                    # 2 columns: sum_cov, sum_mad
-                    metric_sum_cov, metric_sum_mad = metric
-                    sort_col = "sum statistics (cov)"
+                    # 2 columns: sum_sd, sum_mad
+                    metric_sum_sd, metric_sum_mad = metric
+                    sort_col = "sum statistics (sd)"
                     metric_df = pd.DataFrame([{
                         "group": group,
                         "number of cells": num_cell,
-                        "sum statistics (cov)": round(metric_sum_cov, DECIMAL),
+                        "sum statistics (sd)": round(metric_sum_sd, DECIMAL),
                         "sum statistics (mad)": round(metric_sum_mad, DECIMAL)
                     }])
                 else:  # product
-                    # 2 columns: product_cov, product_mad
-                    metric_product_cov, metric_product_mad = metric
-                    sort_col = "product statistics (cov)"
+                    # 2 columns: product_sd, product_mad
+                    metric_product_sd, metric_product_mad = metric
+                    sort_col = "product statistics (sd)"
                     metric_df = pd.DataFrame([{
                         "group": group,
                         "number of cells": num_cell,
-                        "product statistics (cov)": round(metric_product_cov, DECIMAL),
+                        "product statistics (sd)": round(metric_product_sd, DECIMAL),
                         "product statistics (mad)": round(metric_product_mad, DECIMAL)
                     }])
             elif self.metric_type == "both":
@@ -237,15 +227,15 @@ class Nutkin:
         # Initialize lists based on combinations
         if self.variability_method == "both":
             if self.metric_type == "both":
-                g1_sum_cov, g2_sum_cov = [], []
-                g1_product_cov, g2_product_cov = [], []
+                g1_sum_sd, g2_sum_sd = [], []
+                g1_product_sd, g2_product_sd = [], []
                 g1_sum_mad, g2_sum_mad = [], []
                 g1_product_mad, g2_product_mad = [], []
             elif self.metric_type == "sum":
-                g1_sum_cov, g2_sum_cov = [], []
+                g1_sum_sd, g2_sum_sd = [], []
                 g1_sum_mad, g2_sum_mad = [], []
             else:  # product
-                g1_product_cov, g2_product_cov = [], []
+                g1_product_sd, g2_product_sd = [], []
                 g1_product_mad, g2_product_mad = [], []
         elif self.metric_type == "both":
             g1_sum_stats, g2_sum_stats = [], []
@@ -268,29 +258,29 @@ class Nutkin:
             # Append based on combinations
             if self.variability_method == "both":
                 if self.metric_type == "both":
-                    (m1_sum_cov, m1_prod_cov), (m1_sum_mad, m1_prod_mad) = metric1
-                    (m2_sum_cov, m2_prod_cov), (m2_sum_mad, m2_prod_mad) = metric2
-                    g1_sum_cov.append(m1_sum_cov)
-                    g1_product_cov.append(m1_prod_cov)
+                    (m1_sum_sd, m1_prod_sd), (m1_sum_mad, m1_prod_mad) = metric1
+                    (m2_sum_sd, m2_prod_sd), (m2_sum_mad, m2_prod_mad) = metric2
+                    g1_sum_sd.append(m1_sum_sd)
+                    g1_product_sd.append(m1_prod_sd)
                     g1_sum_mad.append(m1_sum_mad)
                     g1_product_mad.append(m1_prod_mad)
-                    g2_sum_cov.append(m2_sum_cov)
-                    g2_product_cov.append(m2_prod_cov)
+                    g2_sum_sd.append(m2_sum_sd)
+                    g2_product_sd.append(m2_prod_sd)
                     g2_sum_mad.append(m2_sum_mad)
                     g2_product_mad.append(m2_prod_mad)
                 elif self.metric_type == "sum":
-                    m1_sum_cov, m1_sum_mad = metric1
-                    m2_sum_cov, m2_sum_mad = metric2
-                    g1_sum_cov.append(m1_sum_cov)
+                    m1_sum_sd, m1_sum_mad = metric1
+                    m2_sum_sd, m2_sum_mad = metric2
+                    g1_sum_sd.append(m1_sum_sd)
                     g1_sum_mad.append(m1_sum_mad)
-                    g2_sum_cov.append(m2_sum_cov)
+                    g2_sum_sd.append(m2_sum_sd)
                     g2_sum_mad.append(m2_sum_mad)
                 else:  # product
-                    m1_prod_cov, m1_prod_mad = metric1
-                    m2_prod_cov, m2_prod_mad = metric2
-                    g1_product_cov.append(m1_prod_cov)
+                    m1_prod_sd, m1_prod_mad = metric1
+                    m2_prod_sd, m2_prod_mad = metric2
+                    g1_product_sd.append(m1_prod_sd)
                     g1_product_mad.append(m1_prod_mad)
-                    g2_product_cov.append(m2_prod_cov)
+                    g2_product_sd.append(m2_prod_sd)
                     g2_product_mad.append(m2_prod_mad)
             elif self.metric_type == "both":
                 g1_sum_stats.append(metric1[0])
@@ -304,11 +294,11 @@ class Nutkin:
         # Return based on combinations
         if self.variability_method == "both":
             if self.metric_type == "both":
-                return ((g1_sum_cov, g2_sum_cov), (g1_product_cov, g2_product_cov)), ((g1_sum_mad, g2_sum_mad), (g1_product_mad, g2_product_mad))
+                return ((g1_sum_sd, g2_sum_sd), (g1_product_sd, g2_product_sd)), ((g1_sum_mad, g2_sum_mad), (g1_product_mad, g2_product_mad))
             elif self.metric_type == "sum":
-                return (g1_sum_cov, g2_sum_cov), (g1_sum_mad, g2_sum_mad)
+                return (g1_sum_sd, g2_sum_sd), (g1_sum_mad, g2_sum_mad)
             else:  # product
-                return (g1_product_cov, g2_product_cov), (g1_product_mad, g2_product_mad)
+                return (g1_product_sd, g2_product_sd), (g1_product_mad, g2_product_mad)
         elif self.metric_type == "both":
             return (g1_sum_stats, g2_sum_stats), (g1_product_stats, g2_product_stats)
         else:
@@ -332,9 +322,9 @@ class Nutkin:
                 # Extract first metric for sorting
                 if self.variability_method == "both":
                     if self.metric_type == "both":
-                        stat_for_sort = metric[0][0]  # sum_cov
+                        stat_for_sort = metric[0][0]  # sum_sd
                     else:
-                        stat_for_sort = metric[0]  # cov value
+                        stat_for_sort = metric[0]  # sd value
                 elif self.metric_type == "both":
                     stat_for_sort = metric[0]  # sum
                 else:
@@ -355,15 +345,15 @@ class Nutkin:
         if self.variability_method == "both":
             out_df = pd.DataFrame(columns=[
                 "groupA", "number of cells in groupA", 
-                "sum statistics for groupA (cov)", "product statistics for groupA (cov)",
+                "sum statistics for groupA (sd)", "product statistics for groupA (sd)",
                 "sum statistics for groupA (mad)", "product statistics for groupA (mad)",
                 "groupB", "number of cells in groupB", 
-                "sum statistics for groupB (cov)", "product statistics for groupB (cov)",
+                "sum statistics for groupB (sd)", "product statistics for groupB (sd)",
                 "sum statistics for groupB (mad)", "product statistics for groupB (mad)",
                 "null hypothesis",
-                "test statistics sum (cov)", "test statistics product (cov)",
+                "test statistics sum (sd)", "test statistics product (sd)",
                 "test statistics sum (mad)", "test statistics product (mad)",
-                "p value sum (cov)", "p value product (cov)",
+                "p value sum (sd)", "p value product (sd)",
                 "p value sum (mad)", "p value product (mad)"
             ])
         else:
@@ -382,71 +372,71 @@ class Nutkin:
 
             if self.variability_method == "both":
                 if self.metric_type == "both":
-                    (m1_sum_cov, m1_prod_cov), (m1_sum_mad, m1_prod_mad) = metric_group1
-                    (m2_sum_cov, m2_prod_cov), (m2_sum_mad, m2_prod_mad) = metric_group2
-                    p_sum_cov, p_prod_cov, p_sum_mad, p_prod_mad = p_results
+                    (m1_sum_sd, m1_prod_sd), (m1_sum_mad, m1_prod_mad) = metric_group1
+                    (m2_sum_sd, m2_prod_sd), (m2_sum_mad, m2_prod_mad) = metric_group2
+                    p_sum_sd, p_prod_sd, p_sum_mad, p_prod_mad = p_results
                     
                     new_row = {
                         "groupA": g1,
                         "number of cells in groupA": group1_cells,
-                        "sum statistics for groupA (cov)": round(m1_sum_cov, DECIMAL),
-                        "product statistics for groupA (cov)": round(m1_prod_cov, DECIMAL),
+                        "sum statistics for groupA (sd)": round(m1_sum_sd, DECIMAL),
+                        "product statistics for groupA (sd)": round(m1_prod_sd, DECIMAL),
                         "sum statistics for groupA (mad)": round(m1_sum_mad, DECIMAL),
                         "product statistics for groupA (mad)": round(m1_prod_mad, DECIMAL),
                         "groupB": g2,
                         "number of cells in groupB": group2_cells,
-                        "sum statistics for groupB (cov)": round(m2_sum_cov, DECIMAL),
-                        "product statistics for groupB (cov)": round(m2_prod_cov, DECIMAL),
+                        "sum statistics for groupB (sd)": round(m2_sum_sd, DECIMAL),
+                        "product statistics for groupB (sd)": round(m2_prod_sd, DECIMAL),
                         "sum statistics for groupB (mad)": round(m2_sum_mad, DECIMAL),
                         "product statistics for groupB (mad)": round(m2_prod_mad, DECIMAL),
                         "null hypothesis": null_hypothesis_str,
-                        "test statistics sum (cov)": round(m1_sum_cov - m2_sum_cov, DECIMAL),
-                        "test statistics product (cov)": round(m1_prod_cov - m2_prod_cov, DECIMAL),
+                        "test statistics sum (sd)": round(m1_sum_sd - m2_sum_sd, DECIMAL),
+                        "test statistics product (sd)": round(m1_prod_sd - m2_prod_sd, DECIMAL),
                         "test statistics sum (mad)": round(m1_sum_mad - m2_sum_mad, DECIMAL),
                         "test statistics product (mad)": round(m1_prod_mad - m2_prod_mad, DECIMAL),
-                        "p value sum (cov)": round(p_sum_cov, DECIMAL),
-                        "p value product (cov)": round(p_prod_cov, DECIMAL),
+                        "p value sum (sd)": round(p_sum_sd, DECIMAL),
+                        "p value product (sd)": round(p_prod_sd, DECIMAL),
                         "p value sum (mad)": round(p_sum_mad, DECIMAL),
                         "p value product (mad)": round(p_prod_mad, DECIMAL)
                     }
                 elif self.metric_type == "sum":
-                    m1_sum_cov, m1_sum_mad = metric_group1
-                    m2_sum_cov, m2_sum_mad = metric_group2
-                    p_sum_cov, p_sum_mad = p_results
+                    m1_sum_sd, m1_sum_mad = metric_group1
+                    m2_sum_sd, m2_sum_mad = metric_group2
+                    p_sum_sd, p_sum_mad = p_results
                     
                     new_row = {
                         "groupA": g1,
                         "number of cells in groupA": group1_cells,
-                        "sum statistics for groupA (cov)": round(m1_sum_cov, DECIMAL),
+                        "sum statistics for groupA (sd)": round(m1_sum_sd, DECIMAL),
                         "sum statistics for groupA (mad)": round(m1_sum_mad, DECIMAL),
                         "groupB": g2,
                         "number of cells in groupB": group2_cells,
-                        "sum statistics for groupB (cov)": round(m2_sum_cov, DECIMAL),
+                        "sum statistics for groupB (sd)": round(m2_sum_sd, DECIMAL),
                         "sum statistics for groupB (mad)": round(m2_sum_mad, DECIMAL),
                         "null hypothesis": null_hypothesis_str,
-                        "test statistics sum (cov)": round(m1_sum_cov - m2_sum_cov, DECIMAL),
+                        "test statistics sum (sd)": round(m1_sum_sd - m2_sum_sd, DECIMAL),
                         "test statistics sum (mad)": round(m1_sum_mad - m2_sum_mad, DECIMAL),
-                        "p value sum (cov)": round(p_sum_cov, DECIMAL),
+                        "p value sum (sd)": round(p_sum_sd, DECIMAL),
                         "p value sum (mad)": round(p_sum_mad, DECIMAL)
                     }
                 else:  # product
-                    m1_prod_cov, m1_prod_mad = metric_group1
-                    m2_prod_cov, m2_prod_mad = metric_group2
-                    p_prod_cov, p_prod_mad = p_results
+                    m1_prod_sd, m1_prod_mad = metric_group1
+                    m2_prod_sd, m2_prod_mad = metric_group2
+                    p_prod_sd, p_prod_mad = p_results
                     
                     new_row = {
                         "groupA": g1,
                         "number of cells in groupA": group1_cells,
-                        "product statistics for groupA (cov)": round(m1_prod_cov, DECIMAL),
+                        "product statistics for groupA (sd)": round(m1_prod_sd, DECIMAL),
                         "product statistics for groupA (mad)": round(m1_prod_mad, DECIMAL),
                         "groupB": g2,
                         "number of cells in groupB": group2_cells,
-                        "product statistics for groupB (cov)": round(m2_prod_cov, DECIMAL),
+                        "product statistics for groupB (sd)": round(m2_prod_sd, DECIMAL),
                         "product statistics for groupB (mad)": round(m2_prod_mad, DECIMAL),
                         "null hypothesis": null_hypothesis_str,
-                        "test statistics product (cov)": round(m1_prod_cov - m2_prod_cov, DECIMAL),
+                        "test statistics product (sd)": round(m1_prod_sd - m2_prod_sd, DECIMAL),
                         "test statistics product (mad)": round(m1_prod_mad - m2_prod_mad, DECIMAL),
-                        "p value product (cov)": round(p_prod_cov, DECIMAL),
+                        "p value product (sd)": round(p_prod_sd, DECIMAL),
                         "p value product (mad)": round(p_prod_mad, DECIMAL)
                     }
             elif self.metric_type == "both":
@@ -511,67 +501,67 @@ class Nutkin:
     
         if self.variability_method == "both":
             if self.metric_type == "both":
-                ((g1_sum_cov, g2_sum_cov), (g1_prod_cov, g2_prod_cov)), ((g1_sum_mad, g2_sum_mad), (g1_prod_mad, g2_prod_mad)) = res
+                ((g1_sum_sd, g2_sum_sd), (g1_prod_sd, g2_prod_sd)), ((g1_sum_mad, g2_sum_mad), (g1_prod_mad, g2_prod_mad)) = res
                 
-                p_sum_cov = (np.sum(np.array(g1_sum_cov)[:, np.newaxis] > np.array(g2_sum_cov)) + 1) / (len(g2_sum_cov) * len(g1_sum_cov) + 1)
-                p_prod_cov = (np.sum(np.array(g1_prod_cov)[:, np.newaxis] > np.array(g2_prod_cov)) + 1) / (len(g2_prod_cov) * len(g1_prod_cov) + 1)
+                p_sum_sd = (np.sum(np.array(g1_sum_sd)[:, np.newaxis] > np.array(g2_sum_sd)) + 1) / (len(g2_sum_sd) * len(g1_sum_sd) + 1)
+                p_prod_sd = (np.sum(np.array(g1_prod_sd)[:, np.newaxis] > np.array(g2_prod_sd)) + 1) / (len(g2_prod_sd) * len(g1_prod_sd) + 1)
                 p_sum_mad = (np.sum(np.array(g1_sum_mad)[:, np.newaxis] > np.array(g2_sum_mad)) + 1) / (len(g2_sum_mad) * len(g1_sum_mad) + 1)
                 p_prod_mad = (np.sum(np.array(g1_prod_mad)[:, np.newaxis] > np.array(g2_prod_mad)) + 1) / (len(g2_prod_mad) * len(g1_prod_mad) + 1)
                 
                 if side == "two-sided":
-                    p_sum_cov = 2 * min(p_sum_cov, 1 - p_sum_cov)
-                    p_prod_cov = 2 * min(p_prod_cov, 1 - p_prod_cov)
+                    p_sum_sd = 2 * min(p_sum_sd, 1 - p_sum_sd)
+                    p_prod_sd = 2 * min(p_prod_sd, 1 - p_prod_sd)
                     p_sum_mad = 2 * min(p_sum_mad, 1 - p_sum_mad)
                     p_prod_mad = 2 * min(p_prod_mad, 1 - p_prod_mad)
                     null_hypothesis_str = "A = B"
                 elif side == "greater":
-                    p_sum_cov = 1 - p_sum_cov
-                    p_prod_cov = 1 - p_prod_cov
+                    p_sum_sd = 1 - p_sum_sd
+                    p_prod_sd = 1 - p_prod_sd
                     p_sum_mad = 1 - p_sum_mad
                     p_prod_mad = 1 - p_prod_mad
                     null_hypothesis_str = "A < B"
                 else:
                     null_hypothesis_str = "A > B"
                 
-                return (p_sum_cov, p_prod_cov, p_sum_mad, p_prod_mad), null_hypothesis_str
+                return (p_sum_sd, p_prod_sd, p_sum_mad, p_prod_mad), null_hypothesis_str
                 
             elif self.metric_type == "sum":
-                (g1_sum_cov, g2_sum_cov), (g1_sum_mad, g2_sum_mad) = res
+                (g1_sum_sd, g2_sum_sd), (g1_sum_mad, g2_sum_mad) = res
                 
-                p_sum_cov = (np.sum(np.array(g1_sum_cov)[:, np.newaxis] > np.array(g2_sum_cov)) + 1) / (len(g2_sum_cov) * len(g1_sum_cov) + 1)
+                p_sum_sd = (np.sum(np.array(g1_sum_sd)[:, np.newaxis] > np.array(g2_sum_sd)) + 1) / (len(g2_sum_sd) * len(g1_sum_sd) + 1)
                 p_sum_mad = (np.sum(np.array(g1_sum_mad)[:, np.newaxis] > np.array(g2_sum_mad)) + 1) / (len(g2_sum_mad) * len(g1_sum_mad) + 1)
                 
                 if side == "two-sided":
-                    p_sum_cov = 2 * min(p_sum_cov, 1 - p_sum_cov)
+                    p_sum_sd = 2 * min(p_sum_sd, 1 - p_sum_sd)
                     p_sum_mad = 2 * min(p_sum_mad, 1 - p_sum_mad)
                     null_hypothesis_str = "A = B"
                 elif side == "greater":
-                    p_sum_cov = 1 - p_sum_cov
+                    p_sum_sd = 1 - p_sum_sd
                     p_sum_mad = 1 - p_sum_mad
                     null_hypothesis_str = "A < B"
                 else:
                     null_hypothesis_str = "A > B"
                 
-                return (p_sum_cov, p_sum_mad), null_hypothesis_str
+                return (p_sum_sd, p_sum_mad), null_hypothesis_str
                 
             else:  # product
-                (g1_prod_cov, g2_prod_cov), (g1_prod_mad, g2_prod_mad) = res
+                (g1_prod_sd, g2_prod_sd), (g1_prod_mad, g2_prod_mad) = res
                 
-                p_prod_cov = (np.sum(np.array(g1_prod_cov)[:, np.newaxis] > np.array(g2_prod_cov)) + 1) / (len(g2_prod_cov) * len(g1_prod_cov) + 1)
+                p_prod_sd = (np.sum(np.array(g1_prod_sd)[:, np.newaxis] > np.array(g2_prod_sd)) + 1) / (len(g2_prod_sd) * len(g1_prod_sd) + 1)
                 p_prod_mad = (np.sum(np.array(g1_prod_mad)[:, np.newaxis] > np.array(g2_prod_mad)) + 1) / (len(g2_prod_mad) * len(g1_prod_mad) + 1)
                 
                 if side == "two-sided":
-                    p_prod_cov = 2 * min(p_prod_cov, 1 - p_prod_cov)
+                    p_prod_sd = 2 * min(p_prod_sd, 1 - p_prod_sd)
                     p_prod_mad = 2 * min(p_prod_mad, 1 - p_prod_mad)
                     null_hypothesis_str = "A = B"
                 elif side == "greater":
-                    p_prod_cov = 1 - p_prod_cov
+                    p_prod_sd = 1 - p_prod_sd
                     p_prod_mad = 1 - p_prod_mad
                     null_hypothesis_str = "A < B"
                 else:
                     null_hypothesis_str = "A > B"
                 
-                return (p_prod_cov, p_prod_mad), null_hypothesis_str
+                return (p_prod_sd, p_prod_mad), null_hypothesis_str
                 
         elif self.metric_type == "both":
             (g1_sum_stats, g2_sum_stats), (g1_product_stats, g2_product_stats) = res
