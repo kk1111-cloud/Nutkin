@@ -132,7 +132,6 @@ The preprocessing module (`preprocessing.py`) performs the following:
 | Parameter            | Type     | Default           | Description                                                                                      |
 |----------------------|----------|-----------------|--------------------------------------------------------------------------------------------------|
 | `adata`              | AnnData  | —               | Preprocessed single-cell RNA-seq data from Step 1                                                |
-| `output_dir`         | str      | —               | Directory to save outputs                                                                        |
 | `num_pc`             | int      | DEFAULT_NUM_PC  | Number of principal components to use in PCA                                                     |
 | `group_col`          | str      | "group"         | Column in `adata.obs` specifying group labels                                                   |
 | `metric_type`        | str      | "sum"           | How to summarize variability: `"sum"`, `"product"`, or `"both"`                                 |
