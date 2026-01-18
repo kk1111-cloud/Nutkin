@@ -6,7 +6,7 @@ single-cell RNA-seq data, based on a linear embedding–based statistical framew
 
 ## Features
 
-- Supports sum, product, variance, and median combination statistics
+- Supports sum, product, standard deviation, median absolute deviation combination statistics
 - Works for both balanced and unbalanced group designs
 - Bootstrap-based inference with parallel computing support
 - Designed for single-cell RNA-seq data analysis
@@ -31,7 +31,7 @@ pip install nutkin
 ### Install from source
 
 ```bash
-git clone https://github.com/yourname/nutkin.git
+git clone https://github.com/kk1111-cloud/Nutkin.git
 cd nutkin
 pip install -e .
 ```
@@ -70,12 +70,9 @@ print(pval)
 python main.py \
     --input_dataset <path_to_input> \
     --output_path <path_to_output> \
-    --group_col clone_id \
+    --group_col <Metadata column(s) in adata.obs> \
     --group1 <group_name_1> \
     --group2 <group_name_2> \
-    --n_comps 30 \
-    --skip_preprocessing \
-    --save_scree_plot \
     --detail
 ```
 
@@ -100,8 +97,8 @@ The preprocessing module (`preprocessing.py`) performs the following:
 - A cleaned and processed AnnData object ready for Nutkin analysis
 
 **Optional outputs**
-- Scree plot (`--save_scree_plot`): Shows the variance explained by each principal component
-- Embedding plots (`--save_embedding_plot`): UMAP, PHATE, or den-SNE visualizations for exploratory analysis
+- Scree plot (`--run_pca`): Shows the variance explained by each principal component
+- Embedding plot (`--run_embedding`): UMAP, PHATE, or den-SNE visualizations for exploratory analysis
 
 ### Step 2: Nutkin main analysis
 
@@ -110,15 +107,11 @@ The preprocessing module (`preprocessing.py`) performs the following:
 
 **Outputs**
 - `var_measurement.csv`: Quantified variability for each defined group
-- Pairwise statistical test results between specified groups
+- `differential_variability.csv`: Pairwise statistical test results between specified groups or all groups
 
 **Optional outputs (`--detail`)**
-- Variability measures for individual principal components
-- PCA scatter plots and contour plots (default: top 3 PCs)
-- Summary tables and visualizations:
-  - `summary_specific.csv`
-  - `all_pairwise_scatter.png`
-  - `all_pairwise_kde.png`
+- `summary_specific.csv`: Variability measures for individual principal components
+- `all_pairwise_scatter.png`, `all_pairwise_kde.png`: PCA scatter plots and contour plots (default: top 3 PCs)
 
 ## Documentation
 
