@@ -29,10 +29,10 @@ def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embeddi
     else:
         print("Data detected as PREPROCESSED. Skipping core preprocessing steps.")
 
-    # --- Step 3: Run PCA and generate visualization ---
+    # --- Step 3: Run PCA and generate scree visualization ---
     if run_pca:
         # Assign back to adata to store PCA results (X_pca, uns['pca'], etc.)
-        adata = run_pca_and_save_plot(adata, n_comps=n_comps, output_path=output_path)
+        run_pca_and_save_plot(adata, n_comps=n_comps, output_path=output_path)
 
     # --- Step 4: Generate Low-Dimensional Embedding ---
     if run_embedding:
@@ -41,7 +41,7 @@ def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embeddi
         emb_full_path = os.path.join(output_path, emb_filename) if output_path else None
         
         # plot_embedding internally modifies adata (adds X_umap etc.)
-        adata = plot_embedding(
+        plot_embedding(
             adata, 
             method=method, 
             output_path=emb_full_path
@@ -74,9 +74,9 @@ def run_pca_and_save_plot(adata, n_comps=50, output_path=None):
         plt.title("PCA Scree Plot")
         plt.savefig(os.path.join(output_path, "pca_scree_plot.png"), dpi=300)
         plt.close()
-    return adata
 
-def plot_embedding(adata, method="umap", color="group", use_rep="X_pca", output_path=None):
+
+def plot_embedding(adata, method="umap", group_col="group", use_rep="X_pca", output_path=None):
     """Computes and plots embeddings like UMAP."""
     method = method.lower()
     
@@ -99,8 +99,7 @@ def plot_embedding(adata, method="umap", color="group", use_rep="X_pca", output_
     sc.pl.embedding(
         adata,
         basis=basis,
-        color=color,
+        color=group_col,
         show=False,
         save=save_filename 
     )
-    return adata
