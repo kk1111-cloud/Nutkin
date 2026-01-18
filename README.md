@@ -138,6 +138,8 @@ The preprocessing module (`preprocessing.py`) performs the following:
 | `variability_method` | str      | "mad"           | Method to compute variability: `"sd"`, `"mad"`, or `"both"`                                     |
 | `verbal`             | bool     | True            | Whether to print progress messages                                                               |
 | `detail`             | bool     | False           | Whether to generate detailed PCA outputs and visualizations                                      |
+| `plot_pc_num`        | int      | 3               | Number of principal components for visualizations                                                |
+| `plot_type`          | str      | 'scatter'       | Type of PCA visualization: 'scatter', 'contour'                                                 |
 
 **Notes**
 - `measure()` computes variability metrics for each group and saves `var_measurement.csv`.  
