@@ -100,6 +100,21 @@ The preprocessing module (`preprocessing.py`) performs the following:
 - Scree plot (`--run_pca`): Shows the variance explained by each principal component
 - Embedding plot (`--run_embedding`): UMAP, PHATE, or den-SNE visualizations for exploratory analysis
 
+**Parameters**
+| Parameter       | Type     | Default   | Description                                                                 |
+|-----------------|----------|-----------|-----------------------------------------------------------------------------|
+| `data_path`      | str      | —         | Path to the input single-cell RNA-seq `.h5ad` file.                        |
+| `n_comps`        | int      | 50        | Number of principal components to compute during PCA.                      |
+| `output_path`    | str/None | None      | Directory path to save optional outputs (scree plot, embedding plot).      |
+| `run_pca`        | bool     | True      | Whether to run PCA and generate the scree plot.                            |
+| `run_embedding`  | bool     | False     | Whether to generate a low-dimensional embedding (UMAP, PHATE, or den-SNE). |
+| `method`         | str      | "umap"    | Embedding method to use if `run_embedding` is True. Only "umap" implemented.|
+
+**Notes**
+- The function automatically detects whether preprocessing has already been done by checking for `log1p` in `adata.uns` or `highly_variable` in `adata.var`.  
+- If preprocessing is required, it performs filtering, normalization, log transformation, HVG selection, and scaling.  
+- Scree plot and embedding plot are optional outputs controlled by `run_pca` and `run_embedding`.
+
 ### Step 2: Nutkin main analysis
 
 **Input**
