@@ -128,6 +128,26 @@ The preprocessing module (`preprocessing.py`) performs the following:
 - `summary_specific.csv`: Variability measures for individual principal components
 - `all_pairwise_scatter.png`, `all_pairwise_kde.png`: PCA scatter plots and contour plots (default: top 3 PCs)
 
+**Parameters**
+| Parameter            | Type     | Default           | Description                                                                                      |
+|----------------------|----------|-----------------|--------------------------------------------------------------------------------------------------|
+| `adata`              | AnnData  | —               | Preprocessed single-cell RNA-seq data from Step 1                                                |
+| `output_dir`         | str      | —               | Directory to save outputs                                                                        |
+| `num_pc`             | int      | DEFAULT_NUM_PC  | Number of principal components to use in PCA                                                     |
+| `group_col`          | str      | "group"         | Column in `adata.obs` specifying group labels                                                   |
+| `metric_type`        | str      | "sum"           | How to summarize variability: `"sum"`, `"product"`, or `"both"`                                 |
+| `variability_method` | str      | "mad"           | Method to compute variability: `"sd"`, `"mad"`, or `"both"`                                     |
+| `verbal`             | bool     | True            | Whether to print progress messages                                                               |
+| `detail`             | bool     | False           | Whether to generate detailed PCA outputs and visualizations                                      |
+
+**Notes**
+- `measure()` computes variability metrics for each group and saves `var_measurement.csv`.  
+- `differential_test()` performs pairwise statistical comparisons between groups and saves `differential_variability.csv`.  
+- Bootstrapping is used internally for hypothesis testing.  
+- PCA-based visualization can be generated using `visualize_pca_results(detail=True)`.  
+- Optional outputs (`summary_specific.csv` and pairwise PCA plots) are only generated if `detail=True`.  
+- The class automatically handles combinations of `metric_type` and `variability_method`, e.g., `"sum"` with `"sd"`, `"both"` with `"both"`, etc.
+
 ## Documentation
 
 Full documentation will be available at:
