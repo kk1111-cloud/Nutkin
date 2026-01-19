@@ -1,5 +1,13 @@
-# Nutkin
-![Logo](logo.png)
+<p align="center">
+  <img src="logo.png" alt="Nutkin Logo" width="150"/>
+</p>
+
+<h1 align="center">Nutkin</h1>
+
+<p align="center">
+  A Python package for quantifying and testing differences in overall transcriptional cell-to-cell variability between groups of cells using single-cell RNA-seq data
+</p>
+
 
 Nutkin is a Python package for quantifying and testing differences in overall
 transcriptional cell-to-cell variability between groups of cells using
