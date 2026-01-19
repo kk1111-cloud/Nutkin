@@ -97,7 +97,10 @@ The preprocessing module (`preprocessing.py`) performs the following:
 - A cleaned and processed AnnData object ready for Nutkin analysis
 
 **Optional outputs**
-- Scree plot (`--run_pca`): Shows the variance explained by each principal component
+- Scree plot (`--run_pca`): Shows the variance explained by each principal component.
+  This plot can be used to guide the selection of `num_pc` by identifying an elbow point
+  or the number of PCs explaining sufficient variance. The default value is
+  `DEFAULT_NUM_PC` (defined in `config.py`).
 - Embedding plot (`--run_embedding`): UMAP, PHATE, or den-SNE visualizations for exploratory analysis
 
 **Parameters**
