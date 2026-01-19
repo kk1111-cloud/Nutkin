@@ -52,7 +52,7 @@ def parse_arg():
     parser.add_argument("--variability_method", choices=["sd", "mad", "both"], default='mad', help="Type of metric to calculate variability: 'standard deviation', 'median absolute deviation', or 'both")
     parser.add_argument("--detail", action="store_true", help="Detailed PCA visualization")
     parser.add_argument("--plot_pc_num", default=3, help="Number of PCs to plot")
-    parser.add_argument("--plot_type", choices=["scatter", "contour"], default='scatter', help="Type of PCA visualization: 'scatter', 'contour'")
+    parser.add_argument("--plot_type", choices=["scatter", "contour","both"], default='scatter', help="Type of PCA visualization: 'scatter', 'contour','both'")
     return parser.parse_args()
     
     
