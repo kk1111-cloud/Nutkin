@@ -4,7 +4,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import itertools
-from config import *
+from .config import *
 from sklearn.decomposition import PCA
 import seaborn as sns
 from scipy.stats import gaussian_kde
