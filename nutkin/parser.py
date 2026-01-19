@@ -2,7 +2,7 @@ import textwrap
 import logging
 import argparse
 import numpy as np
-from config import *
+from .config import *
 import sys
 
 # setup logging
