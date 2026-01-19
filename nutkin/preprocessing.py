@@ -8,7 +8,7 @@ import umap
 
 
 
-def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embedding=False, method="umap"):
+def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embedding=False, group_col='group', method="umap"):
     """
     Complete pipeline: Load .h5ad, auto-preprocess if needed, run PCA, and generate embeddings.
     """
@@ -36,7 +36,7 @@ def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embeddi
 
     # --- Step 4: Generate Low-Dimensional Embedding ---
     if run_embedding:
-        print(f"Step 4: Generating {method.upper()} embedding...")
+        print(f"Generating {method.upper()} embedding...")
         emb_filename = f"{method}_plot.png" if output_path else None
         emb_full_path = os.path.join(output_path, emb_filename) if output_path else None
         
@@ -44,6 +44,7 @@ def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embeddi
         plot_embedding(
             adata, 
             method=method, 
+            group_col=group_col,
             output_path=emb_full_path
         )
         
