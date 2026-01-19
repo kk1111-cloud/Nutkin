@@ -38,50 +38,8 @@ def main():
         output_path=args.output_path,
         run_pca=True,
         run_embedding=args.run_embedding,
-        method=args.embedding_method
-    )
-
-    from matplotlib import pyplot as plt
-import logging
-import textwrap
-from preprocessing import *
-from config import *
-from parser import parse_arg
-from nutkin import Nutkin
-import pandas as pd
-
-# setup logging
-LOG_FORMAT = \
-'(%(asctime)s) %(message)s'
-DATE_FORMATE = '%d/%m/%Y %H:%M:%S' #'%a, %d %b %Y %H:%M:%S'
-logging.basicConfig(format=LOG_FORMAT, datefmt=DATE_FORMATE)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
-def print_logo(args):
-  
-    print(textwrap.dedent(
-            f'''\n\nWelcome to \n
-                {NUTKIN_LOGO}
-        '''))
-    return
-
-
-
-def main():
-    args = parse_arg()
-    print_logo(args)
-
-    # === Step 1: Load and preprocess the data ===
-    logger.info("Loading and preprocessing data...")
-    adata = load_data(
-        data_path=args.input_path,
-        n_comps=args.n_comps,
-        output_path=args.output_path,
-        run_pca=True,
-        run_embedding=args.run_embedding,
-        method=args.embedding_method
+        method=args.embedding_method,
+        group_col=args.group_col
     )
 
     
