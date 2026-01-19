@@ -57,8 +57,8 @@ python -m nutkin.main \
     --input_path PATH_TO_YOUR_INPUT_FILE \     
     --output_path PATH_TO_YOUR_OUTPUT_FOLDER \ 
     --group_col NAME_OF_GROUP_COLUMN \       
-    --group1 NAME_OF_FIRST_GROUP \              
-    --group2 NAME_OF_SECOND_GROUP \             
+    --group1 NAME_OF_FIRST_GROUP \    # Name(s) of the first group(s) to compare; multiple names separated by space          
+    --group2 NAME_OF_SECOND_GROUP \   # Name(s) of the second group(s) to compare; multiple names separated by space         
     --detail                              
 
 
