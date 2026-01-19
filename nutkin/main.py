@@ -1,10 +1,10 @@
 from matplotlib import pyplot as plt
 import logging
 import textwrap
-from preprocessing import *
-from config import *
-from parser import parse_arg
-from nutkin import Nutkin
+from .preprocessing import *
+from .config import *
+from .parser import parse_arg
+from .nutkin import Nutkin
 import pandas as pd
 
 # setup logging
@@ -38,7 +38,7 @@ def main():
         output_path=args.output_path,
         run_pca=True,
         run_embedding=args.run_embedding,
-        method=args.embedding_method,
+        embedding_method=args.embedding_method,
         group_col=args.group_col
     )
 
