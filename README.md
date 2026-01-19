@@ -1,4 +1,5 @@
 # Nutkin
+![Logo](logo.png)
 
 Nutkin is a Python package for quantifying and testing differences in overall
 transcriptional cell-to-cell variability between groups of cells using
