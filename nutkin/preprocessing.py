@@ -8,7 +8,7 @@ import umap
 
 
 
-def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embedding=False, group_col='group', method="umap"):
+def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embedding=False, group_col='group', embedding_method="umap"):
     """
     Complete pipeline: Load .h5ad, auto-preprocess if needed, run PCA, and generate embeddings.
     """
@@ -36,14 +36,14 @@ def load_data(data_path, n_comps=50, output_path=None, run_pca=True, run_embeddi
 
     # --- Step 4: Generate Low-Dimensional Embedding ---
     if run_embedding:
-        print(f"Generating {method.upper()} embedding...")
-        emb_filename = f"{method}_plot.png" if output_path else None
+        print(f"Generating {embedding_method.upper()} embedding...")
+        emb_filename = f"{embedding_method}_plot.png" if output_path else None
         emb_full_path = os.path.join(output_path, emb_filename) if output_path else None
         
         # plot_embedding internally modifies adata (adds X_umap etc.)
         plot_embedding(
             adata, 
-            method=method, 
+            embedding_method=embedding_method, 
             group_col=group_col,
             output_path=emb_full_path
         )
@@ -77,16 +77,16 @@ def run_pca_and_save_plot(adata, n_comps=50, output_path=None):
         plt.close()
 
 
-def plot_embedding(adata, method="umap", group_col="group", use_rep="X_pca", output_path=None):
+def plot_embedding(adata, embedding_method="umap", group_col="group", use_rep="X_pca", output_path=None):
     """Computes and plots embeddings like UMAP."""
-    method = method.lower()
+    embedding_method = embedding_method.lower()
     
-    if method == "umap":
+    if embedding_method == "umap":
         sc.pp.neighbors(adata, use_rep=use_rep)
         sc.tl.umap(adata)
         basis = "umap"
     else:
-        raise ValueError(f"Method {method} not currently implemented in this block.")
+        raise ValueError(f"Method {embedding_method} not currently implemented in this block.")
 
     # Handle file saving logic
     save_filename = None
