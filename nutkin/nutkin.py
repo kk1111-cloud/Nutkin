@@ -643,32 +643,47 @@ class Nutkin:
         for group in selected_groups:
             group_data = plot_data[plot_data.iloc[:, 0] == group]
             group_matrix = self._change_of_axes(group_data)
-            product_specific = self._summarize_cov_matrix(group_matrix.iloc[:, 1:])
+            metric_result = self._summarize_cov_matrix(group_matrix.iloc[:, 1:])
             stds_specific = np.sqrt(np.diag(np.cov(group_matrix.iloc[:, 1:].T)))
 
             row_specific = [group]
-
-            if self.metric_type in ["sum", "product"]:
-                row_specific += stds_specific.tolist()[:self.num_pc]
-                row_specific.append(product_specific)
+            row_specific += stds_specific.tolist()[:self.num_pc]
+            
+            # Handle different combinations of variability_method and metric_type
+            if self.variability_method == "both":
+                if self.metric_type == "both":
+                    (sum_sd, prod_sd), (sum_mad, prod_mad) = metric_result
+                    row_specific += [sum_sd, prod_sd, sum_mad, prod_mad]
+                elif self.metric_type == "sum":
+                    sum_sd, sum_mad = metric_result
+                    row_specific += [sum_sd, sum_mad]
+                else:  # product
+                    prod_sd, prod_mad = metric_result
+                    row_specific += [prod_sd, prod_mad]
             elif self.metric_type == "both":
-                row_specific += stds_specific.tolist()[:self.num_pc]
-                row_specific.append(product_specific)
+                sum_stat, prod_stat = metric_result
+                row_specific += [sum_stat, prod_stat]
+            else:
+                row_specific.append(metric_result)
 
             summary_specific.append(row_specific)
 
-
-
-        col_names = ["Groups"]
-        if self.metric_type == "sum":
-            col_names += [f"PC{i+1}" for i in range(self.num_pc)]
-            col_names += ["sum"]
-        elif self.metric_type == "product":
-            col_names += [f"PC{i+1}" for i in range(self.num_pc)]
-            col_names += ["product"]
+        # Build column names based on variability_method and metric_type
+        col_names = ["Groups"] + [f"PC{i+1}" for i in range(self.num_pc)]
+        
+        if self.variability_method == "both":
+            if self.metric_type == "both":
+                col_names += ["sum (sd)", "product (sd)", "sum (mad)", "product (mad)"]
+            elif self.metric_type == "sum":
+                col_names += ["sum (sd)", "sum (mad)"]
+            else:  # product
+                col_names += ["product (sd)", "product (mad)"]
         elif self.metric_type == "both":
-            col_names += [f"PC{i+1}" for i in range(self.num_pc)]
-            col_names += ["sum","product"]
+            col_names += ["sum", "product"]
+        elif self.metric_type == "sum":
+            col_names += ["sum"]
+        else:  # product
+            col_names += ["product"]
 
         summary_specific_df = pd.DataFrame(summary_specific, columns=col_names)
 
@@ -676,9 +691,7 @@ class Nutkin:
             os.makedirs(self.output_path, exist_ok=True)
             summary_specific_df.to_csv(os.path.join(self.output_path, "summary_specific.csv"), index=False)
 
-            
-            
-            
+        # Prepare data for plotting
         X = self.data.iloc[:, 1:].values
         groups_all = self.data.iloc[:, 0].values
 
@@ -708,68 +721,96 @@ class Nutkin:
 
         plot_data = pd.concat(plot_data, ignore_index=True)
 
-
+        # Generate all PC pairs
         pc_indices = list(range(1, plot_pc_num + 1))
         pc_pairs = list(itertools.combinations(pc_indices, 2))
 
         n_rows = len(group_pairs)
         n_cols = len(pc_pairs)
 
-        fig, axes = plt.subplots(
-            n_rows, n_cols,
-            figsize=(4 * n_cols, 3 * n_rows)
-        )
-        axes = np.atleast_2d(axes)
+        # Normalize plot_type to list
+        if isinstance(plot_type, str):
+            plot_types = [plot_type]
+        else:
+            plot_types = plot_type
+
+        # Validate plot types
+        valid_types = {"scatter", "contour", "both"}
+        for pt in plot_types:
+            if pt not in valid_types:
+                raise ValueError(f"plot_type must be 'scatter', 'contour', 'both', or a list of these. Got: {pt}")
 
         colors = ["blue", "orange"]
 
-        for row_idx, (g1, g2) in enumerate(group_pairs):
-            for col_idx, (pcx, pcy) in enumerate(pc_pairs):
-                ax = axes[row_idx, col_idx]
-
-                for g, c in zip([g1, g2], colors):
-                    subset = plot_data[plot_data["group"] == g]
-
-                    if plot_type == "scatter":
-                        ax.scatter(
-                            subset[f"subPC{pcx}"],
-                            subset[f"subPC{pcy}"],
-                            s=2,
-                            alpha=0.6,
-                            color=c,
-                            label=g
-                        )
-
-                    elif plot_type == "contour":
-                        _draw_kde_contour(ax, subset, pcx, pcy, c)
-
-                ax.set_xlabel(f"subPC{pcx}")
-                ax.set_ylabel(f"subPC{pcy}")
-                ax.set_aspect("equal", adjustable="box")
-
-                if col_idx == 0:
-                    ax.set_title(f"{g1} vs {g2}", fontsize=10)
-
-                ax.legend(fontsize=6, frameon=False)
-
-
-        if self.output_path is not None:
-            fname = f"pairwise_pca_{plot_type}.png"
-            fig.savefig(
-                os.path.join(self.output_path, fname),
-                dpi=300,
-                bbox_inches="tight"
+        # Create separate figures for each plot type
+        for current_plot_type in plot_types:
+            fig, axes = plt.subplots(
+                n_rows, n_cols,
+                figsize=(4 * n_cols, 3 * n_rows)
             )
+            axes = np.atleast_2d(axes)
 
-        plt.close(fig)
+            for row_idx, (g1, g2) in enumerate(group_pairs):
+                for col_idx, (pcx, pcy) in enumerate(pc_pairs):
+                    ax = axes[row_idx, col_idx]
 
-        print(
-            f"PCA visualization ({plot_type}) saved to {self.output_path}"
-            if self.output_path else
-            "Visualization complete."
-        )
+                    for g, c in zip([g1, g2], colors):
+                        subset = plot_data[plot_data["group"] == g]
+
+                        if current_plot_type == "scatter":
+                            ax.scatter(
+                                subset[f"subPC{pcx}"],
+                                subset[f"subPC{pcy}"],
+                                s=2,
+                                alpha=0.6,
+                                color=c,
+                                label=g
+                            )
+
+                        elif current_plot_type == "contour":
+                            self._draw_kde_contour(ax, subset, pcx, pcy, c)
+
+                        elif current_plot_type == "both":
+                            # First draw contour, then scatter on top
+                            self._draw_kde_contour(ax, subset, pcx, pcy, c)
+                            ax.scatter(
+                                subset[f"subPC{pcx}"],
+                                subset[f"subPC{pcy}"],
+                                s=2,
+                                alpha=0.4,
+                                color=c,
+                                label=g
+                            )
+
+                    ax.set_xlabel(f"subPC{pcx}")
+                    ax.set_ylabel(f"subPC{pcy}")
+                    ax.set_aspect("equal", adjustable="box")
+
+                    if col_idx == 0:
+                        ax.set_title(f"{g1} vs {g2}", fontsize=10)
+
+                    ax.legend(fontsize=6, frameon=False)
+
+            plt.tight_layout()
+
+            if self.output_path is not None:
+                fname = f"pairwise_pca_{current_plot_type}.png"
+                fig.savefig(
+                    os.path.join(self.output_path, fname),
+                    dpi=300,
+                    bbox_inches="tight"
+                )
+
+            plt.close(fig)
+
+            print(
+                f"PCA visualization ({current_plot_type}) saved to {self.output_path}"
+                if self.output_path else
+                f"Visualization ({current_plot_type}) complete."
+            )
     
-    def _draw_kde_contour(ax, subset, pcx, pcy, color):
+    def _draw_kde_contour(self, ax, subset, pcx, pcy, color):
+        """Helper function to draw KDE contour plots"""
         x = subset[f"subPC{pcx}"].values
         y = subset[f"subPC{pcy}"].values
 
@@ -780,8 +821,8 @@ class Nutkin:
 
         xmin, xmax = x.min(), x.max()
         ymin, ymax = y.min(), y.max()
-        pad_x = 0.1 * (xmax - xmin)
-        pad_y = 0.1 * (ymax - ymin)
+        pad_x = 0.1 * (xmax - xmin) if xmax != xmin else 0.1
+        pad_y = 0.1 * (ymax - ymin) if ymax != ymin else 0.1
 
         xx, yy = np.mgrid[
             xmin - pad_x : xmax + pad_x : 100j,
@@ -801,11 +842,16 @@ class Nutkin:
             alpha=0.8
         )
 
-        # Fixed density levels
-        cs = ax.contour(
-            xx, yy, zz,
-            levels=contour_levels_fixed,
-            colors=color,
-            linewidths=1.6
-        )
-        ax.clabel(cs, fmt="%.1e", fontsize=8)
+        # Fixed density levels (if defined in config)
+        try:
+            from config import contour_levels_fixed
+            cs = ax.contour(
+                xx, yy, zz,
+                levels=contour_levels_fixed,
+                colors=color,
+                linewidths=1.6
+            )
+            ax.clabel(cs, fmt="%.1e", fontsize=8)
+        except (ImportError, AttributeError):
+            # If contour_levels_fixed not defined, skip this part
+            pass
