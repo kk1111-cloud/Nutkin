@@ -156,7 +156,4 @@ The documentation includes:
 - API reference
 - Methodological background
 
-## License
-
-MIT License
 
