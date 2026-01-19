@@ -36,21 +36,6 @@ cd nutkin
 pip install -e .
 ```
 
-## Quick Start
-
-```python
-from nutkin import run_test
-
-pval = run_test(
-    data=expr_matrix,
-    group=group_labels,
-    method="sum",
-    n_bootstrap=1000
-)
-
-print(pval)
-```
-
 ## Usage
 
 ### Basic workflow
@@ -67,13 +52,16 @@ print(pval)
 ### Running Nutkin from the command line
 
 ```bash
-python main.py \
-    --input_dataset <path_to_input> \
-    --output_path <path_to_output> \
-    --group_col <Metadata column(s) in adata.obs> \
-    --group1 <group_name_1> \
-    --group2 <group_name_2> \
-    --detail
+cd ../nutkin
+python -m nutkin.main \
+    --input_path PATH_TO_YOUR_INPUT_FILE \     
+    --output_path PATH_TO_YOUR_OUTPUT_FOLDER \ 
+    --group_col NAME_OF_GROUP_COLUMN \       
+    --group1 NAME_OF_FIRST_GROUP \              
+    --group2 NAME_OF_SECOND_GROUP \             
+    --detail                              
+
+
 ```
 
 ## Nutkin pipeline and outputs
