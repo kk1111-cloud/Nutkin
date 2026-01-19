@@ -99,7 +99,7 @@ The preprocessing module (`preprocessing.py`) performs the following:
 | `output_path`    | str/None | None      | Directory path to save optional outputs (scree plot, embedding plot).      |
 | `run_pca`        | bool     | True      | Whether to run PCA and generate the scree plot.                            |
 | `run_embedding`  | bool     | False     | Whether to generate a low-dimensional embedding (UMAP, PHATE, or den-SNE). |
-| `method`         | str      | "umap"    | Embedding method to use if `run_embedding` is True. Only "umap" implemented.|
+| `embedding_method`| str      | "umap"    | Embedding method to use if `run_embedding` is True. Only "umap" implemented.|
 
 **Notes**
 - The function automatically detects whether preprocessing has already been done by checking for `log1p` in `adata.uns` or `highly_variable` in `adata.var`.  
@@ -125,6 +125,8 @@ The preprocessing module (`preprocessing.py`) performs the following:
 | `adata`              | AnnData  | —               | Preprocessed single-cell RNA-seq data from Step 1                                                |
 | `num_pc`             | int      | DEFAULT_NUM_PC  | Number of principal components to use in PCA                                                     |
 | `group_col`          | str      | "group"         | Column in `adata.obs` specifying group labels                                                   |
+| `group1`             |str or list| —              |Name(s) of the first group(s) to compare. Can be a single string or a list of group names        |
+| `group2`             |str or list| —              |Name(s) of the second group(s) to compare. Can be a single string or a list of group names        |
 | `metric_type`        | str      | "sum"           | How to summarize variability: `"sum"`, `"product"`, or `"both"`                                 |
 | `variability_method` | str      | "mad"           | Method to compute variability: `"sd"`, `"mad"`, or `"both"`                                     |
 | `verbal`             | bool     | True            | Whether to print progress messages                                                               |
@@ -134,7 +136,10 @@ The preprocessing module (`preprocessing.py`) performs the following:
 
 **Notes**
 - `measure()` computes variability metrics for each group and saves `var_measurement.csv`.  
-- `differential_test()` performs pairwise statistical comparisons between groups and saves `differential_variability.csv`.    
+- `differential_test()` performs pairwise statistical comparisons between groups and saves `differential_variability.csv`.
+  - If group1 and group2 are lists, they must have the same length. Each element in group1 is compared to the element at the same index in group2.
+  - If group1 and group2 are single strings, only one group comparison is performed.
+  - If group1 and group2 are None, the function automatically compares the variability of adjacent groups according to the order in group_col.
 - PCA-based visualization can be generated using `visualize_pca_results(detail=True)`.  
 - Optional outputs (`summary_specific.csv` and pairwise PCA plots) are only generated if `detail=True`.  
 - The class automatically handles combinations of `metric_type` and `variability_method`, e.g., `"sum"` with `"sd"`, `"both"` with `"both"`, etc.
