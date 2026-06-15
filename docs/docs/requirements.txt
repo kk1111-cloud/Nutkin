@@ -1,0 +1,15 @@
+# Core Sphinx packages
+sphinx>=7.0
+sphinx-rtd-theme
+
+# Markdown support
+myst-parser
+
+# Nutkin dependencies (needed for autodoc)
+numpy
+pandas
+scipy
+matplotlib
+scanpy
+anndata
+scikit-learn

@@ -1,0 +1,22 @@
+# .readthedocs.yaml
+version: 2
+
+# Python
+python:
+  version: 3.9
+  install:
+    - method: pip
+      path: .
+    - requirements: docs/requirements.txt
+
+
+sphinx:
+  configuration: docs/conf.py
+
+
+formats:
+  - html
+
+
+# build:
+#   only_branches: [main]
