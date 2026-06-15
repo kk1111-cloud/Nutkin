@@ -1,5 +1,4 @@
 # Tutorial: Full Analysis Walkthrough
-test
 This tutorial walks through a complete Nutkin analysis using the provided test dataset
 (`test_data.h5ad`). The same steps are available as a Jupyter notebook in `test/test.ipynb`.
 
