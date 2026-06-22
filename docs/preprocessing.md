@@ -104,3 +104,9 @@ After running `load_data`, the following files are saved to `output_path`:
 
 Example PCA scree plot showing variance explained by each principal component.
 ```
+```{figure} output/umapumap_plot.png
+:alt: UMAP Plot
+:width: 500px
+
+Example a low-dimensional embedding (UMAP) and use `clone_id` in `adata.obs` to color the plot and group.
+```
