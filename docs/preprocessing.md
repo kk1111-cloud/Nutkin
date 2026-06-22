@@ -98,7 +98,7 @@ After running `load_data`, the following files are saved to `output_path`:
 | `pca_scree_plot.png` | PCA scree plot (if `run_pca=True`) |
 | `umapumap_plot.png` | UMAP embedding colored by `group_col` (if `run_embedding=True`) |
 
-```{figure} _static/pca_scree_plot.png
+```{figure} output/pca_scree_plot.png
 :alt: PCA Scree Plot
 :width: 500px
 
