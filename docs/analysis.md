@@ -59,6 +59,13 @@ The result is saved as `var_measurement.csv` in the output directory. Each row c
 - Number of cells in the group
 - Computed variability statistic(s)
 
+```{figure} output/measure.png
+:alt: var_measurement.csv
+:width: 500px
+
+Example the variability metric for each cell group.
+```
+
 ---
 
 ## 2.2 Differential Testing Between Groups
@@ -83,6 +90,12 @@ nut.differential_test(
 # Comparing mCHERRY_Barcode_1614 and mCHERRY_Barcode_1755
 # Running Bootstrapping
 # Saving results
+```
+```{figure} output/compare1.png
+:alt: differential_variability.csv
+:width: 500px
+
+Example differential analysis results.
 ```
 
 ### Automatic pairwise comparisons
@@ -116,6 +129,12 @@ The output is saved as `differential_variability.csv`. Each row contains:
 | `test statistics` | Observed difference in variability (groupA − groupB) |
 | `p value` | Two-sided bootstrap p-value |
 
+```{figure} output/compare2.png
+:alt: differential_variability.csv
+:width: 500px
+
+Example differential analysis results.
+```
 ---
 
 ## 2.3 Visualize PCA Results (Optional)
@@ -144,3 +163,17 @@ nut.visualize_pca_results(detail=True, plot_type='both')
 | `pairwise_pca_scatter.png` | Scatter plots in pairwise PC space |
 | `pairwise_pca_contour.png` | KDE contour plots in pairwise PC space |
 | `pairwise_pca_both.png` | Scatter + contour overlaid |
+
+
+```{figure} output/summary.png
+:alt: summary_specific.csv
+:width: 500px
+
+Example Per-group variability for each PC (PC1–PC15) and overall statistics.
+```
+```{figure} output/pairwise_pca_both.png
+:alt: pairwise_pca_both.png
+:width: 500px
+
+Example Scatter and KDE contour plots in pairwise PC space.
+```
