@@ -93,7 +93,7 @@ nut.differential_test(
 ```
 ```{figure} output/compare1.png
 :alt: differential_variability.csv
-:width: 500px
+:width: 800px
 
 Example differential analysis results.
 ```
@@ -131,7 +131,7 @@ The output is saved as `differential_variability.csv`. Each row contains:
 
 ```{figure} output/compare2.png
 :alt: differential_variability.csv
-:width: 500px
+:width: 800px
 
 Example differential analysis results.
 ```
@@ -167,13 +167,13 @@ nut.visualize_pca_results(detail=True, plot_type='both')
 
 ```{figure} output/summary.png
 :alt: summary_specific.csv
-:width: 500px
+:width: 800px
 
 Example Per-group variability for each PC (PC1–PC15) and overall statistics.
 ```
 ```{figure} output/pairwise_pca_both.png
 :alt: pairwise_pca_both.png
-:width: 500px
+:width: 800px
 
 Example Scatter and KDE contour plots in pairwise PC space.
 ```
